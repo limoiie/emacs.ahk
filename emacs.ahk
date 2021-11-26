@@ -12,14 +12,21 @@ is_pre_x = 0
 ; turns to be 1 when ctrl-space is pressed
 is_pre_spc = 0
 
+is_edge()
+{
+  IfWinActive,ahk_exe msedge.exe ; Edge
+    Return 1
+  Return 0
+}
+
 ; Applications you want to disable emacs-like keybindings
 ; (Please comment out applications you don't use)
 is_target()
 {
   IfWinActive,ahk_class ConsoleWindowClass ; Cygwin
-    Return 1 
+    Return 1
   IfWinActive,ahk_class MEADOW ; Meadow
-    Return 1 
+    Return 1
   IfWinActive,ahk_class cygwin/x X rl-xterm-XTerm-0
     Return 1
   IfWinActive,ahk_class MozillaUIWindowClass ; keysnail on Firefox
@@ -29,6 +36,10 @@ is_target()
     Return 1
   IfWinActive,ahk_class Vim ; GVIM
     Return 1
+  IfWinActive,ahk_exe WindowsTerminal.exe ; WindowsTerminal
+    Return 1
+  IfWinActive,ahk_exe Code.exe ; WindowsTerminal
+    Return 1
 ;  IfWinActive,ahk_class SWT_Window0 ; Eclipse
 ;    Return 1
 ;   IfWinActive,ahk_class Xming X
@@ -36,7 +47,7 @@ is_target()
 ;   IfWinActive,ahk_class SunAwtFrame
 ;     Return 1
 ;   IfWinActive,ahk_class Emacs ; NTEmacs
-;     Return 1  
+;     Return 1
 ;   IfWinActive,ahk_class XEmacs ; XEmacs on Cygwin
 ;     Return 1
   Return 0
@@ -57,7 +68,6 @@ delete_backward_char()
 kill_line()
 {
   Send {ShiftDown}{END}{SHIFTUP}
-  Sleep 50 ;[ms] this value depends on your environment
   Send ^x
   global is_pre_spc = 0
   Return
@@ -113,6 +123,12 @@ kill_region()
 kill_ring_save()
 {
   Send ^c
+  global is_pre_spc = 0
+  Return
+}
+kill_ring_del_forward_word()
+{
+  Send +!{Right}^x
   global is_pre_spc = 0
   Return
 }
@@ -196,9 +212,27 @@ backward_char()
 {
   global
   if is_pre_spc
-    Send +{Left} 
+    Send +{Left}
   Else
     Send {Left}
+  Return
+}
+forward_word()
+{
+  global
+  if is_pre_spc
+    Send +!{Right}
+  Else
+    Send !{Right}
+  Return
+}
+backward_word()
+{
+  global
+  if is_pre_spc
+    Send +!{Left}
+  Else
+    Send !{Left}
   Return
 }
 scroll_up()
@@ -226,7 +260,7 @@ scroll_down()
     Send %A_ThisHotkey%
   Else
     is_pre_x = 1
-  Return 
+  Return
 ^f::
   If is_target()
     Send %A_ThisHotkey%
@@ -237,7 +271,13 @@ scroll_down()
     Else
       forward_char()
   }
-  Return  
+  Return
+!f::
+  If is_target()
+    Send %A_ThisHotkey%
+  Else
+    forward_word()
+  Return
 ^c::
   If is_target()
     Send %A_ThisHotkey%
@@ -246,12 +286,18 @@ scroll_down()
     If is_pre_x
       kill_emacs()
   }
-  Return  
+  Return
 ^d::
   If is_target()
     Send %A_ThisHotkey%
   Else
     delete_char()
+  Return
+!d::
+  If is_target()
+    Send %A_ThisHotkey%
+  Else
+    kill_ring_del_forward_word()
   Return
 ^h::
   If is_target()
@@ -335,8 +381,8 @@ scroll_down()
     Send %A_ThisHotkey%
   Else
     undo()
-  Return  
-  
+  Return
+
 ;$^{Space}::
 ;^vk20sc039::
 ^vk20::
@@ -391,6 +437,12 @@ scroll_down()
   Else
     backward_char()
   Return
+!b::
+  If is_target()
+    Send %A_ThisHotkey%
+  Else
+    backward_word()
+  Return
 ^v::
   If is_target()
     Send %A_ThisHotkey%
@@ -403,4 +455,9 @@ scroll_down()
   Else
     scroll_up()
   Return
-
+^!w::
+  If is_edge()
+    Send ^w
+  Else
+    Send %A_ThisHotkey%
+  Return
